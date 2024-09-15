@@ -264,10 +264,10 @@ public final class GradientLimit extends AbstractLimit {
     @Override
     public int _update(final long startTime, final long rtt, final int inflight, final boolean didDrop) {
         lastRtt = rtt;
-        minWindowRttSampleListener.addSample(rtt);
+        minWindowRttSampleListener.addLongSample(rtt);
 
         final double queueSize = this.queueSize.apply((int)this.estimatedLimit);
-        queueSizeSampleListener.addSample(queueSize);
+        queueSizeSampleListener.addDoubleSample(queueSize);
 
         // Reset or probe for a new noload RTT and a new estimatedLimit.  It's necessary to cut the limit
         // in half to avoid having the limit drift upwards when the RTT is probed during heavy load.
@@ -278,12 +278,14 @@ public final class GradientLimit extends AbstractLimit {
             estimatedLimit = Math.max(minLimit, queueSize);
             rttNoLoadMeasurement.reset();
             lastRtt = 0;
-            LOG.debug("Probe MinRTT limit={}", getLimit());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Probe MinRTT limit={}", getLimit());
+            }
             return (int)estimatedLimit;
         }
         
         final long rttNoLoad = rttNoLoadMeasurement.add(rtt).longValue();
-        minRttSampleListener.addSample(rttNoLoad);
+        minRttSampleListener.addLongSample(rttNoLoad);
         
         // Rtt could be higher than rtt_noload because of smoothing rtt noload updates
         // so set to 1.0 to indicate no queuing.  Otherwise calculate the slope and don't
